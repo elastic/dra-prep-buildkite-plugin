@@ -1,14 +1,17 @@
 ---
 # $yaml-language-server: $schema=https://raw.githubusercontent.com/buildkite/pipeline-schema/main/schema.json
 steps:
-  - label: "Build"
-    command: "true"
+  - label: ":shell: Lint"
+    command: "shellcheck hooks/post-command"
+    agents:
+      image: "docker.elastic.co/ci-agent-images/pipelib:0.27.0@sha256:d1713778d27e0b6208f59ba8761f04ef033af4c4237cb2614a09d38584c5ff88"
 
-  - label: "Test"
-    command: "true"
+  - label: ":test_tube: Test"
+    command: "bats tests/"
+    agents:
+      image: "docker.elastic.co/ci-agent-images/pipelib:0.27.0@sha256:d1713778d27e0b6208f59ba8761f04ef033af4c4237cb2614a09d38584c5ff88"
 
-  - label: "Deploy"
-    command: "true"
-
-  - label: "Publish"
-    command: "true"
+  - label: ":buildkite: Validate plugin"
+    plugins:
+      - buildkite-plugins/plugin-linter#v3.3.0:
+          name: dra-prep
