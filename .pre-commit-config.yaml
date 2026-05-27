@@ -1,0 +1,25 @@
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: "v6.0.0"
+    hooks:
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: end-of-file-fixer
+      - id: no-commit-to-branch
+      - id: trailing-whitespace
+
+  - repo: "https://github.com/syntaqx/git-hooks"
+    rev: "v0.0.18"
+    hooks:
+      - id: shellcheck
+        exclude: (^bin/activate-hermit|^bin/hermit|^tests/)
+
+  - repo: https://github.com/jmlrt/check-yamlschema
+    rev: "v0.0.7"
+    hooks:
+      - id: check-yamlschema
+        files: ^catalog-info.yaml$

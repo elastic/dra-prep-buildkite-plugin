@@ -15,6 +15,5 @@ steps:
 
   - label: ":buildkite: Validate plugin"
     plugins:
-      - buildkite-plugins/plugin-linter#v3.3.0:
+      - plugin-linter#v3.3.0:
           id: elastic/dra-prep
-          name: dra-prep
