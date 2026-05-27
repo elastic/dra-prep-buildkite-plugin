@@ -19,8 +19,37 @@ steps:
     if_changed:
       - "catalog-info.yaml"
 
-  - label: ":pipeline: Upload default Pipeline"
-    command: "buildkite-agent pipeline upload .buildkite/default-pipeline.yml"
+  - label: ":shell: Lint"
+    command: "bin/shellcheck hooks/post-command"
+    agents:
+      provider: "gcp"
+      image: family/core-ubuntu-2204
+    if_changed:
+      include:
+        - "**/*"
+      exclude:
+        - "catalog-info.yaml"
+        - "renovate.json"
+
+  - label: ":test_tube: Test"
+    command: "bin/bats tests/"
+    agents:
+      provider: "gcp"
+      image: family/core-ubuntu-2204
+    if_changed:
+      include:
+        - "**/*"
+      exclude:
+        - "catalog-info.yaml"
+        - "renovate.json"
+
+  - label: ":buildkite: Validate plugin"
+    plugins:
+      - plugin-linter#v3.3.0:
+          id: elastic/dra-prep
+    agents:
+      provider: "gcp"
+      image: family/core-ubuntu-2204
     if_changed:
       include:
         - "**/*"
