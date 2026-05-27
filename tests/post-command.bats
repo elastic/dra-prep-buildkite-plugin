@@ -59,7 +59,9 @@ EOF
   chmod +x "${STUB_DIR}/curl"
   export CURL_STUB_DIR="${STUB_DIR}"
 
-  # Stub buildkite-agent: logs all invocations to a file
+  # Stub buildkite-agent: no real agent is running in tests, so replace it with a
+  # fake that records every invocation. Tests assert the hook called the right
+  # subcommands (meta-data set, artifact upload) with the right arguments.
   export AGENT_LOG="${STUB_DIR}/buildkite-agent.log"
   cat > "${STUB_DIR}/buildkite-agent" << 'EOF'
 #!/usr/bin/env bash
