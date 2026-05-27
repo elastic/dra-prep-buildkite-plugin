@@ -67,21 +67,10 @@ Consumers on `elastic/dra-prep#vX.Y.Z` automatically pick up the matching binary
 
 ## Development
 
-Run tests locally (requires `bats` and `sha256sum`):
+Install tools via [Hermit](https://cashapp.github.io/hermit/) and run checks:
 
 ```bash
-bats tests/
-```
-
-Lint the hook:
-
-```bash
-shellcheck hooks/post-command
-```
-
-Validate the plugin schema:
-
-```bash
-# requires buildkite-plugins/plugin-linter installed locally
-plugin-linter --name dra-prep
+source bin/activate-hermit
+pre-commit run --all-files  # lint + format
+bats tests/                 # unit tests
 ```

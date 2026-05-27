@@ -50,7 +50,6 @@ curl -fsSL \
 
 curl -fsSL \
   -H "Authorization: Bearer ${GITHUB_TOKEN}" \
-  -H "Accept: application/octet-stream" \
   -o "${tmp}/checksums.txt" \
   "${release_url}/checksums.txt"
 
@@ -74,8 +73,8 @@ echo "Running dractl prep..."
   --workflow      "${workflow}" \
   --artifacts-dir "${artifacts_dir}" \
   --output-dir    ./dra \
-  --branch        "${BUILDKITE_BRANCH:-}" \
-  --commit        "${BUILDKITE_COMMIT:-}"
+  --branch        "${BUILDKITE_BRANCH}" \
+  --commit        "${BUILDKITE_COMMIT}"
 
 build_id="$(cat ./dra/build_id)"
 echo "Setting DRA_VERSION_BUILD_ID=${build_id}"

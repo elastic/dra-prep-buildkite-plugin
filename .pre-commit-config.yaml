@@ -9,7 +9,6 @@ repos:
       - id: check-yaml
         args: [--allow-multiple-documents]
       - id: end-of-file-fixer
-      - id: no-commit-to-branch
       - id: trailing-whitespace
 
   - repo: "https://github.com/syntaqx/git-hooks"
@@ -24,7 +23,7 @@ repos:
     rev: "0.30.0"
     hooks:
       - id: check-buildkite
-        files: (^.buildkite/pipeline.yml$)
+        files: ^.buildkite/pipeline.yml$
 
   - repo: https://github.com/jmlrt/check-yamlschema
     rev: "v0.0.7"

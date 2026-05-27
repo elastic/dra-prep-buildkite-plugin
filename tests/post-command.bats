@@ -61,10 +61,9 @@ EOF
   export AGENT_LOG="${STUB_DIR}/buildkite-agent.log"
   cat > "${STUB_DIR}/buildkite-agent" << 'EOF'
 #!/usr/bin/env bash
-echo "buildkite-agent $*" >> "${AGENT_LOG_FILE}"
+echo "buildkite-agent $*" >> "${AGENT_LOG}"
 EOF
   chmod +x "${STUB_DIR}/buildkite-agent"
-  export AGENT_LOG_FILE="${AGENT_LOG}"
 
   export PATH="${STUB_DIR}:${PATH}"
 }
