@@ -20,8 +20,8 @@ artifacts_dir="${BUILDKITE_PLUGIN_DRA_PREP_ARTIFACTS_DIR:-}"
 [[ -n "${workflow}" ]]      || { echo "ERROR: plugin config 'workflow' is required"       >&2; exit 1; }
 [[ -n "${artifacts_dir}" ]] || { echo "ERROR: plugin config 'artifacts_dir' is required" >&2; exit 1; }
 
-if [[ -z "${GITHUB_TOKEN:-}" ]]; then
-  echo "ERROR: GITHUB_TOKEN is not set." >&2
+if [[ -z "${VAULT_GITHUB_TOKEN:-}" ]]; then
+  echo "ERROR: VAULT_GITHUB_TOKEN is not set." >&2
   echo "       Add elastic/dractl to your pipeline's GithubPermissionSet." >&2
   exit 1
 fi
@@ -43,13 +43,13 @@ archive="dractl_linux_${arch}.tar.gz"
 
 echo "Downloading ${archive}..."
 curl -fsSL \
-  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  -H "Authorization: Bearer ${VAULT_GITHUB_TOKEN}" \
   -H "Accept: application/octet-stream" \
   -o "${tmp}/${archive}" \
   "${release_url}/${archive}"
 
 curl -fsSL \
-  -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+  -H "Authorization: Bearer ${VAULT_GITHUB_TOKEN}" \
   -o "${tmp}/checksums.txt" \
   "${release_url}/checksums.txt"
 

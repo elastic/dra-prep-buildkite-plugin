@@ -17,7 +17,7 @@ setup() {
   export BUILDKITE_PLUGIN_DRA_PREP_STACK_VERSION=9.5.0-SNAPSHOT
   export BUILDKITE_PLUGIN_DRA_PREP_WORKFLOW=snapshot
   export BUILDKITE_PLUGIN_DRA_PREP_ARTIFACTS_DIR=./build
-  export GITHUB_TOKEN=fake-token
+  export VAULT_GITHUB_TOKEN=fake-token
   export BUILDKITE_BRANCH=main
   export BUILDKITE_COMMIT=abc123
 
@@ -87,8 +87,8 @@ teardown() {
   echo "$output" | grep -q "product_id"
 }
 
-@test "fails with GithubPermissionSet hint when GITHUB_TOKEN is missing" {
-  unset GITHUB_TOKEN
+@test "fails with GithubPermissionSet hint when VAULT_GITHUB_TOKEN is missing" {
+  unset VAULT_GITHUB_TOKEN
   run bash "${HOOK}"
   [ "$status" -ne 0 ]
   echo "$output" | grep -qi "GithubPermissionSet"
