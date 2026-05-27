@@ -17,10 +17,6 @@ steps:
   - label: ":package: Build apm-server"
     command: make build
     plugins:
-      - elastic/vault-secrets#vX.Y.Z:
-          path: "secret/ci/elastic/github-readonly"
-          field: token
-          env_var: GITHUB_TOKEN
       - elastic/dra-prep#v0.1.0:
           product_id: apm-server
           stack_version: 9.5.0-SNAPSHOT
@@ -51,7 +47,7 @@ A downstream step can read the build id:
 
 ## Requirements
 
-The plugin downloads the `dractl` binary at runtime from `elastic/dractl` GitHub Releases. Your step needs a `GITHUB_TOKEN` with read access to private repos. Chain [`elastic/vault-secrets-buildkite-plugin`](https://github.com/elastic/vault-secrets-buildkite-plugin) before this plugin (see usage snippet above).
+The plugin downloads the `dractl` binary at runtime from `elastic/dractl` GitHub Releases. The pipeline's `GithubPermissionSet` must include `elastic/dractl` so the agent has a `GITHUB_TOKEN` with read access to that private repo.
 
 The plugin runs on Linux (amd64 and arm64). All Elastic Buildkite agents meet this requirement.
 

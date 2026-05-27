@@ -87,11 +87,11 @@ teardown() {
   echo "$output" | grep -q "product_id"
 }
 
-@test "fails with vault-secrets hint when GITHUB_TOKEN is missing" {
+@test "fails with GithubPermissionSet hint when GITHUB_TOKEN is missing" {
   unset GITHUB_TOKEN
   run bash "${HOOK}"
   [ "$status" -ne 0 ]
-  echo "$output" | grep -qi "vault-secrets-buildkite-plugin"
+  echo "$output" | grep -qi "GithubPermissionSet"
 }
 
 @test "downloads, verifies, and runs dractl on happy path" {
