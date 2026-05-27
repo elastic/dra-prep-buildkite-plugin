@@ -6,7 +6,7 @@ Buildkite plugin that runs in the same step as your build to generate DRA (Daily
 - `manifest-{stack_version}.json` (schema 2.1.0)
 - `summary-{stack_version}.html`
 
-All three files plus the build artifacts are uploaded to the Buildkite store. The [DRA processing pipeline](https://github.com/elastic/platform-engineering-productivity) downloads them from the store and ships them to the artifact CDN.
+All three files plus the build artifacts are uploaded to the Buildkite store. A downstream DRA processing pipeline downloads them and ships them to the artifact CDN.
 
 The binary doing the actual work is [`elastic/dractl`](https://github.com/elastic/dractl) (private). This repo is the public Buildkite plugin shell.
 
