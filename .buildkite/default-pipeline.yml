@@ -1,0 +1,19 @@
+---
+# $yaml-language-server: $schema=https://raw.githubusercontent.com/buildkite/pipeline-schema/main/schema.json
+steps:
+  - label: ":shell: Lint"
+    command: "bin/shellcheck hooks/post-command"
+    agents:
+      provider: "gcp"
+      image: family/core-ubuntu-2204
+
+  - label: ":test_tube: Test"
+    command: "bin/bats tests/"
+    agents:
+      provider: "gcp"
+      image: family/core-ubuntu-2204
+
+  - label: ":buildkite: Validate plugin"
+    plugins:
+      - plugin-linter#v3.3.0:
+          id: elastic/dra-prep
