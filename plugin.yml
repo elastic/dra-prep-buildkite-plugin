@@ -2,6 +2,7 @@
 name: DRA Prep
 description: Generate DRA build id, manifest, and summary for the artifacts produced in this step, and upload them to the Buildkite store.
 author: https://github.com/elastic
+requirements: []
 configuration:
   properties:
     product_id:
