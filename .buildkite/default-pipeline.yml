@@ -1,13 +1,17 @@
 ---
 # $yaml-language-server: $schema=https://raw.githubusercontent.com/buildkite/pipeline-schema/main/schema.json
 steps:
-  - label: ":shell: Lint"
-    command: "bin/shellcheck hooks/post-command"
+  - label: ":white_check_mark: Pre-commit"
+    command: "pre-commit run --from-ref origin/HEAD --to-ref HEAD --show-diff-on-failure"
+    plugins:
+      - elastic/hermit#v1.0.2
     agents:
       image: "docker.elastic.co/ci-agent-images/pipelib:0.27.0@sha256:d1713778d27e0b6208f59ba8761f04ef033af4c4237cb2614a09d38584c5ff88"
 
   - label: ":test_tube: Test"
-    command: "bin/bats tests/"
+    command: "bats tests/"
+    plugins:
+      - elastic/hermit#v1.0.2
     agents:
       image: "docker.elastic.co/ci-agent-images/pipelib:0.27.0@sha256:d1713778d27e0b6208f59ba8761f04ef033af4c4237cb2614a09d38584c5ff88"
 
@@ -15,3 +19,6 @@ steps:
     plugins:
       - plugin-linter#v3.3.0:
           id: elastic/dra-prep
+    agents:
+      provider: "gcp"
+      image: family/core-ubuntu-2204
