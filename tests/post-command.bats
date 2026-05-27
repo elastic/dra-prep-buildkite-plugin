@@ -23,9 +23,9 @@ setup() {
 
   # Determine the arch the hook will request (matches hook's uname logic)
   case "$(uname -m)" in
-    x86_64)          local arch="amd64" ;;
+    x86_64) local arch="amd64" ;;
     aarch64 | arm64) local arch="arm64" ;;
-    *)               local arch="amd64" ;;
+    *) local arch="amd64" ;;
   esac
 
   # Build a real tarball from the fake dractl fixture (name matches goreleaser template)
@@ -37,10 +37,10 @@ setup() {
   # Compute its real sha256 for checksums.txt
   local sha256
   sha256="$(sha256sum "${STUB_DIR}/${archive}" | awk '{print $1}')"
-  echo "${sha256}  ${archive}" > "${STUB_DIR}/checksums.txt"
+  echo "${sha256}  ${archive}" >"${STUB_DIR}/checksums.txt"
 
   # Stub curl: copies files from CURL_STUB_DIR by basename of URL
-  cat > "${STUB_DIR}/curl" << 'EOF'
+  cat >"${STUB_DIR}/curl" <<'EOF'
 #!/usr/bin/env bash
 output_file=""
 url=""
@@ -63,7 +63,7 @@ EOF
   # fake that records every invocation. Tests assert the hook called the right
   # subcommands (meta-data set, artifact upload) with the right arguments.
   export AGENT_LOG="${STUB_DIR}/buildkite-agent.log"
-  cat > "${STUB_DIR}/buildkite-agent" << 'EOF'
+  cat >"${STUB_DIR}/buildkite-agent" <<'EOF'
 #!/usr/bin/env bash
 echo "buildkite-agent $*" >> "${AGENT_LOG}"
 EOF
