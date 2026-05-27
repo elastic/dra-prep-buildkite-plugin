@@ -39,7 +39,7 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "${tmp}"' EXIT
 
 release_url="https://github.com/elastic/dractl/releases/download/${DRACTL_VERSION}"
-archive="dractl_linux_${arch}.tar.gz"
+archive="dractl_${DRACTL_VERSION#v}_linux_${arch}.tar.gz"
 
 echo "Downloading ${archive}..."
 curl -fsSL \

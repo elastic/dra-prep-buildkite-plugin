@@ -28,14 +28,16 @@ setup() {
     *)               local arch="amd64" ;;
   esac
 
-  # Build a real tarball from the fake dractl fixture
-  tar -czf "${STUB_DIR}/dractl_linux_${arch}.tar.gz" \
+  # Build a real tarball from the fake dractl fixture (name matches goreleaser template)
+  local version="0.1.0"
+  local archive="dractl_${version}_linux_${arch}.tar.gz"
+  tar -czf "${STUB_DIR}/${archive}" \
     -C "${FIXTURES_DIR}" dractl
 
   # Compute its real sha256 for checksums.txt
   local sha256
-  sha256="$(sha256sum "${STUB_DIR}/dractl_linux_${arch}.tar.gz" | awk '{print $1}')"
-  echo "${sha256}  dractl_linux_${arch}.tar.gz" > "${STUB_DIR}/checksums.txt"
+  sha256="$(sha256sum "${STUB_DIR}/${archive}" | awk '{print $1}')"
+  echo "${sha256}  ${archive}" > "${STUB_DIR}/checksums.txt"
 
   # Stub curl: copies files from CURL_STUB_DIR by basename of URL
   cat > "${STUB_DIR}/curl" << 'EOF'
