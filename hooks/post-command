@@ -13,7 +13,6 @@ echo "--- :package: DRA Prep (dractl ${DRACTL_VERSION})"
 product_id="${BUILDKITE_PLUGIN_DRA_PREP_PRODUCT_ID:-}"
 stack_version="${BUILDKITE_PLUGIN_DRA_PREP_STACK_VERSION:-}"
 workflow="${BUILDKITE_PLUGIN_DRA_PREP_WORKFLOW:-}"
-artifacts_dir="${BUILDKITE_PLUGIN_DRA_PREP_ARTIFACTS_DIR:-}"
 
 [[ -n "${product_id}" ]] || {
   echo "ERROR: plugin config 'product_id' is required" >&2
@@ -27,14 +26,17 @@ artifacts_dir="${BUILDKITE_PLUGIN_DRA_PREP_ARTIFACTS_DIR:-}"
   echo "ERROR: plugin config 'workflow' is required" >&2
   exit 1
 }
-[[ -n "${artifacts_dir}" ]] || {
-  echo "ERROR: plugin config 'artifacts_dir' is required" >&2
-  exit 1
-}
 
 if [[ -z "${VAULT_GITHUB_TOKEN:-}" ]]; then
   echo "ERROR: VAULT_GITHUB_TOKEN is not set." >&2
   echo "       Add elastic/dractl to your pipeline's GithubPermissionSet." >&2
+  exit 1
+fi
+
+artifacts_dir="dra/${product_id}"
+if [[ ! -d "${artifacts_dir}" ]] || [[ -z "$(find "${artifacts_dir}" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
+  echo "ERROR: expected artifacts directory '${artifacts_dir}' is absent or empty." >&2
+  echo "       Stage your build output under dra/${product_id}/ before the plugin runs." >&2
   exit 1
 fi
 
@@ -66,7 +68,7 @@ curl -fsSL \
   "${release_url}/checksums.txt"
 
 echo "Verifying checksum..."
-expected="$(grep "${archive}" "${tmp}/checksums.txt" | awk '{print $1}')"
+expected="$(awk -v f="${archive}" '$2 == f {print $1}' "${tmp}/checksums.txt")"
 actual="$(sha256sum "${tmp}/${archive}" | awk '{print $1}')"
 if [[ "${expected}" != "${actual}" ]]; then
   echo "ERROR: checksum mismatch for ${archive}" >&2

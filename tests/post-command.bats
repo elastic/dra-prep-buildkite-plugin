@@ -16,7 +16,6 @@ setup() {
   export BUILDKITE_PLUGIN_DRA_PREP_PRODUCT_ID=apm-server
   export BUILDKITE_PLUGIN_DRA_PREP_STACK_VERSION=9.5.0-SNAPSHOT
   export BUILDKITE_PLUGIN_DRA_PREP_WORKFLOW=snapshot
-  export BUILDKITE_PLUGIN_DRA_PREP_ARTIFACTS_DIR=./build
   export VAULT_GITHUB_TOKEN=fake-token
   export BUILDKITE_BRANCH=main
   export BUILDKITE_COMMIT=abc123
@@ -98,7 +97,15 @@ teardown() {
   echo "$output" | grep -qi "GithubPermissionSet"
 }
 
+@test "fails when artifacts directory is absent or empty" {
+  run bash "${HOOK}"
+  [ "$status" -ne 0 ]
+  echo "$output" | grep -q "dra/apm-server"
+}
+
 @test "downloads, verifies, and runs dractl on happy path" {
+  mkdir -p ./dra/apm-server
+  touch ./dra/apm-server/apm-server-9.5.0-SNAPSHOT-amd64.deb
   run bash "${HOOK}"
   [ "$status" -eq 0 ]
   # Fake dractl wrote build_id = "9.5.0-ab12cd34"

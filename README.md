@@ -15,16 +15,20 @@ The binary doing the actual work is [`elastic/dractl`](https://github.com/elasti
 ```yaml
 steps:
   - label: ":package: Build apm-server"
-    command: make build
+    command: |
+      make build
+      mkdir -p dra/apm-server
+      cp build/distributions/* dra/apm-server/
     plugins:
       - elastic/dra-prep#v0.1.0:
           product_id: apm-server
           stack_version: 9.5.0-SNAPSHOT
           workflow: snapshot
-          artifacts_dir: ./build/distributions
 ```
 
 The plugin runs after your `command` completes. If the command fails, the plugin skips gracefully.
+
+Artifacts must be staged under `dra/{product_id}/` by the build command before the plugin runs. The plugin validates that this directory exists and is non-empty, then passes it to `dractl` and uploads everything under `dra/` to the Buildkite store.
 
 A downstream step can read the build id:
 
@@ -43,7 +47,6 @@ A downstream step can read the build id:
 | `product_id` | yes | Product identifier, e.g. `apm-server` |
 | `stack_version` | yes | Stack version, e.g. `9.5.0-SNAPSHOT` |
 | `workflow` | yes | `snapshot` or `staging` |
-| `artifacts_dir` | yes | Path to the directory containing build artifacts |
 
 ## Requirements
 

@@ -23,7 +23,7 @@ repos:
     rev: "0.30.0"
     hooks:
       - id: check-buildkite
-        files: ^.buildkite/pipeline.yml$
+        files: ^\.buildkite/.*\.yml$
 
   - repo: https://github.com/jmlrt/check-yamlschema
     rev: "v0.0.7"
