@@ -15,6 +15,7 @@ The binary doing the actual work is [`elastic/dractl`](https://github.com/elasti
 ```yaml
 steps:
   - label: ":package: Build apm-server"
+    key: build-apm-server
     command: |
       make build
       mkdir -p dra/apm-server
