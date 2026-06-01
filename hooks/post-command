@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DRACTL_VERSION="v0.1.0"
+
+if [[ "${BUILDKITE_COMMAND_EXIT_STATUS:-0}" != "0" ]]; then
+  echo "--- :skip: Producer step failed (exit ${BUILDKITE_COMMAND_EXIT_STATUS}), skipping DRA prep"
+  exit 0
+fi
+
+echo "--- :package: DRA Prep (dractl ${DRACTL_VERSION})"
+
+product_id="${BUILDKITE_PLUGIN_DRA_PREP_PRODUCT_ID:-}"
+stack_version="${BUILDKITE_PLUGIN_DRA_PREP_STACK_VERSION:-}"
+workflow="${BUILDKITE_PLUGIN_DRA_PREP_WORKFLOW:-}"
+
+[[ -n "${product_id}" ]] || {
+  echo "ERROR: plugin config 'product_id' is required" >&2
+  exit 1
+}
+[[ -n "${stack_version}" ]] || {
+  echo "ERROR: plugin config 'stack_version' is required" >&2
+  exit 1
+}
+[[ -n "${workflow}" ]] || {
+  echo "ERROR: plugin config 'workflow' is required" >&2
+  exit 1
+}
+
+if [[ -z "${VAULT_GITHUB_TOKEN:-}" ]]; then
+  echo "ERROR: VAULT_GITHUB_TOKEN is not set." >&2
+  echo "       Add elastic/dractl to your pipeline's GithubPermissionSet." >&2
+  exit 1
+fi
+
+artifacts_dir="dra/${product_id}"
+if [[ ! -d "${artifacts_dir}" ]] || [[ -z "$(find "${artifacts_dir}" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
+  echo "ERROR: expected artifacts directory '${artifacts_dir}' is absent or empty." >&2
+  echo "       Stage your build output under dra/${product_id}/ before the plugin runs." >&2
+  exit 1
+fi
+
+case "$(uname -m)" in
+  x86_64) arch="amd64" ;;
+  aarch64 | arm64) arch="arm64" ;;
+  *)
+    echo "ERROR: unsupported architecture: $(uname -m)" >&2
+    exit 1
+    ;;
+esac
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "${tmp}"' EXIT
+
+release_url="https://github.com/elastic/dractl/releases/download/${DRACTL_VERSION}"
+archive="dractl_${DRACTL_VERSION#v}_linux_${arch}.tar.gz"
+
+echo "Downloading ${archive}..."
+curl -fsSL \
+  -H "Authorization: Bearer ${VAULT_GITHUB_TOKEN}" \
+  -H "Accept: application/octet-stream" \
+  -o "${tmp}/${archive}" \
+  "${release_url}/${archive}"
+
+curl -fsSL \
+  -H "Authorization: Bearer ${VAULT_GITHUB_TOKEN}" \
+  -o "${tmp}/checksums.txt" \
+  "${release_url}/checksums.txt"
+
+echo "Verifying checksum..."
+expected="$(awk -v f="${archive}" '$2 == f {print $1}' "${tmp}/checksums.txt")"
+actual="$(sha256sum "${tmp}/${archive}" | awk '{print $1}')"
+if [[ "${expected}" != "${actual}" ]]; then
+  echo "ERROR: checksum mismatch for ${archive}" >&2
+  echo "  expected: ${expected}" >&2
+  echo "  actual:   ${actual}" >&2
+  exit 1
+fi
+
+tar -xzf "${tmp}/${archive}" -C "${tmp}"
+chmod +x "${tmp}/dractl"
+
+echo "Running dractl prep..."
+"${tmp}/dractl" prep \
+  --product-id "${product_id}" \
+  --stack-version "${stack_version}" \
+  --workflow "${workflow}" \
+  --artifacts-dir "${artifacts_dir}" \
+  --output-dir ./dra \
+  --branch "${BUILDKITE_BRANCH}" \
+  --commit "${BUILDKITE_COMMIT}"
+
+build_id="$(cat ./dra/build_id)"
+echo "Setting DRA_VERSION_BUILD_ID=${build_id}"
+buildkite-agent meta-data set DRA_VERSION_BUILD_ID "${build_id}"
+
+echo "Uploading DRA artifacts to Buildkite store..."
+buildkite-agent artifact upload "dra/**/*"
