@@ -20,10 +20,10 @@ repos:
         exclude: (^bin/activate-hermit|^bin/hermit|^tests/)
 
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.30.0"
+    rev: "0.37.2"
     hooks:
       - id: check-buildkite
-        files: ^\.buildkite/.*\.yml$
+        files: ^\.buildkite/default-pipeline\.yml$
 
   - repo: https://github.com/jmlrt/check-yamlschema
     rev: "v0.0.7"
