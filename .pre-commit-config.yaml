@@ -23,7 +23,8 @@ repos:
     rev: "0.37.2"
     hooks:
       - id: check-buildkite
-        files: ^\.buildkite/default-pipeline\.yml$
+        files: ^\.buildkite/.*\.yml$
+        language_version: python3.12
 
   - repo: https://github.com/jmlrt/check-yamlschema
     rev: "v0.0.7"

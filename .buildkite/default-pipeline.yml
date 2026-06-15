@@ -2,7 +2,7 @@
 # $yaml-language-server: $schema=https://raw.githubusercontent.com/buildkite/pipeline-schema/main/schema.json
 steps:
   - label: ":white_check_mark: Pre-commit"
-    command: "python3.12 -mpip install pre-commit && python3.12 -mpre_commit run --from-ref origin/HEAD --to-ref HEAD --show-diff-on-failure"
+    command: "python3.12 -mpip install pre-commit==4.6.0 && python3.12 -mpre_commit run --from-ref origin/HEAD --to-ref HEAD --show-diff-on-failure"
     plugins:
       - elastic/hermit#v1.0.2
     agents:

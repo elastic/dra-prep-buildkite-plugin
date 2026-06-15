@@ -9,9 +9,10 @@ A public Buildkite plugin shell. The hook downloads and runs `elastic/dractl` (p
 ## Development commands
 
 ```bash
-source bin/activate-hermit      # activate hermit env (shellcheck, shfmt, bats, pre-commit)
-pre-commit run --all-files      # lint + format (shellcheck, shfmt, yaml checks)
-bats tests/                     # run unit tests
+source bin/activate-hermit                    # activate hermit env (shellcheck, shfmt, bats, python3.12)
+python3.12 -mpip install pre-commit==4.6.0    # install pre-commit under Python 3.12 (not in hermit)
+python3.12 -mpre_commit run --all-files       # lint + format (shellcheck, shfmt, yaml checks)
+bats tests/                                   # run unit tests
 ```
 
 ## Architecture
