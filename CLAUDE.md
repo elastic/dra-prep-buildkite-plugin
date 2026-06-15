@@ -23,6 +23,13 @@ bats tests/                                   # run unit tests
 - **`bin/`** — hermit environment. Managed via `hermit install/remove`; never edit symlinks manually.
 - **`.buildkite/pipeline.yml`** — CI entry point triggered by `catalog-info.yaml`. Runs pre-commit and bats on `ubuntu-build-essential`, plugin-linter on a GCP VM.
 
+## CI constraints
+
+- **hermit pre-commit is pinned to Python 3.9**: The hermit `pre-commit` package declares `runtime-dependencies = ["python3@3.9"]` in the upstream cashapp/hermit-packages manifest. Hermit invokes pre-commit via an absolute path to Python 3.9 — adding a `python3@3.12` hermit shim to `bin/` does NOT override this. Adding `language_version: python3.12` to `.pre-commit-config.yaml` doesn't help either, because virtualenv runs inside a pre-commit subprocess that doesn't resolve hermit shims.
+- **Workaround**: Remove `pre-commit` from hermit, install `python3@3.12` instead, and invoke pre-commit via pip in CI and locally: `python3.12 -mpip install pre-commit==4.6.0 && python3.12 -mpre_commit run ...` (see `default-pipeline.yml`).
+- **CI image has no Python**: `ubuntu-build-essential` ships no Python. All Python in CI comes from hermit.
+- **check-buildkite validates all `.buildkite/*.yml` files** with the Buildkite schema vendored in check-jsonschema. As of 0.37.x the vendored schema supports the Elastic-internal `if_changed` extension used in `pipeline.yml`.
+
 ## Key conventions
 
 - **Version lockstep**: `DRACTL_VERSION` in `hooks/post-command` must match the plugin git tag. Bump both together at release.
