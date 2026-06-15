@@ -90,7 +90,7 @@ echo "Running dractl prep..."
   --branch "${BUILDKITE_BRANCH}" \
   --commit "${BUILDKITE_COMMIT}"
 
-build_id="$(cat ./dra/build_id)"
+build_id="$(jq -r '.build_id' "./dra/manifest-${stack_version}.json")"
 echo "Setting DRA_VERSION_BUILD_ID=${build_id}"
 buildkite-agent meta-data set DRA_VERSION_BUILD_ID "${build_id}"
 

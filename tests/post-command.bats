@@ -108,7 +108,6 @@ teardown() {
   touch ./dra/apm-server/apm-server-9.5.0-SNAPSHOT-amd64.deb
   run bash "${HOOK}"
   [ "$status" -eq 0 ]
-  # Fake dractl wrote build_id = "9.5.0-ab12cd34"
   grep -q "meta-data set DRA_VERSION_BUILD_ID 9.5.0-ab12cd34" "${AGENT_LOG}"
   grep -q "artifact upload dra" "${AGENT_LOG}"
 }
