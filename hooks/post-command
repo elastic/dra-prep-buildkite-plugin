@@ -86,13 +86,13 @@ echo "Running dractl prep..."
   --stack-version "${stack_version}" \
   --workflow "${workflow}" \
   --artifacts-dir "${artifacts_dir}" \
-  --output-dir ./dra \
   --branch "${BUILDKITE_BRANCH}" \
   --commit "${BUILDKITE_COMMIT}"
 
-build_id="$(jq -r '.build_id' "./dra/manifest-${stack_version}.json")"
+manifest="$(find "${artifacts_dir}/dra/${product_id}" -name "manifest-${stack_version}.json" | head -1)"
+build_id="$(jq -r '.build_id' "${manifest}")"
 echo "Setting DRA_VERSION_BUILD_ID=${build_id}"
 buildkite-agent meta-data set DRA_VERSION_BUILD_ID "${build_id}"
 
 echo "Uploading DRA artifacts to Buildkite store..."
-buildkite-agent artifact upload "dra/**/*"
+buildkite-agent artifact upload "${artifacts_dir}/dra/**/*"

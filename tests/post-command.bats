@@ -109,5 +109,5 @@ teardown() {
   run bash "${HOOK}"
   [ "$status" -eq 0 ]
   grep -q "meta-data set DRA_VERSION_BUILD_ID 9.5.0-ab12cd34" "${AGENT_LOG}"
-  grep -q "artifact upload dra" "${AGENT_LOG}"
+  grep -q "artifact upload dra/apm-server/dra" "${AGENT_LOG}"
 }
