@@ -13,6 +13,7 @@ echo "--- :package: DRA Prep (dractl ${DRACTL_VERSION})"
 product_id="${BUILDKITE_PLUGIN_DRA_PREP_PRODUCT_ID:-}"
 stack_version="${BUILDKITE_PLUGIN_DRA_PREP_STACK_VERSION:-}"
 workflow="${BUILDKITE_PLUGIN_DRA_PREP_WORKFLOW:-}"
+fail_on_diff="${BUILDKITE_PLUGIN_DRA_PREP_FAIL_ON_DIFF:-false}"
 
 [[ -n "${product_id}" ]] || {
   echo "ERROR: plugin config 'product_id' is required" >&2
@@ -81,13 +82,16 @@ tar -xzf "${tmp}/${archive}" -C "${tmp}"
 chmod +x "${tmp}/dractl"
 
 echo "Running dractl prep..."
-"${tmp}/dractl" prep \
-  --product-id "${product_id}" \
-  --stack-version "${stack_version}" \
-  --workflow "${workflow}" \
-  --artifacts-dir "${artifacts_dir}" \
-  --branch "${BUILDKITE_BRANCH}" \
+dractl_args=(
+  --product-id "${product_id}"
+  --stack-version "${stack_version}"
+  --workflow "${workflow}"
+  --artifacts-dir "${artifacts_dir}"
+  --branch "${BUILDKITE_BRANCH}"
   --commit "${BUILDKITE_COMMIT}"
+)
+[[ "${fail_on_diff}" == "true" ]] && dractl_args+=(--fail-on-diff)
+"${tmp}/dractl" prep "${dractl_args[@]}"
 
 manifest="$(find "${artifacts_dir}/dra/${product_id}" -name "manifest-${stack_version}.json" | head -1)"
 build_id="$(jq -r '.build_id' "${manifest}")"
