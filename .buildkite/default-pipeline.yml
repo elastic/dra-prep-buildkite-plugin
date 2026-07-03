@@ -26,7 +26,7 @@ steps:
   - label: ":smoke: Integration test"
     command: ".buildkite/scripts/integration-test.sh"
     plugins:
-      - elastic/dra-prep-buildkite-plugin#$BUILDKITE_COMMIT:
+      - elastic/dra-prep#$BUILDKITE_COMMIT:
           product_id: smoke-test
           stack_version: "9.5.0-SNAPSHOT"
           workflow: snapshot
