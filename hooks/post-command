@@ -34,7 +34,7 @@ artifacts_dir="${BUILDKITE_PLUGIN_DRA_PREP_ARTIFACTS_DIR:-}"
 
 case "${workflow}" in
   snapshot) gcs_bucket="elastic-artifacts-snapshot" ;;
-  staging)  gcs_bucket="elastic-artifacts-staging"  ;;
+  staging) gcs_bucket="elastic-artifacts-staging" ;;
   *)
     echo "ERROR: unknown workflow '${workflow}'; expected 'snapshot' or 'staging'" >&2
     exit 1
@@ -98,8 +98,8 @@ echo "Running dractl prep..."
   --stack-version "${stack_version}" \
   --workflow "${workflow}" \
   --artifacts-dir "${artifacts_dir}" \
-  --branch        "${BUILDKITE_BRANCH}" \
-  --commit        "${BUILDKITE_COMMIT}"
+  --branch "${BUILDKITE_BRANCH}" \
+  --commit "${BUILDKITE_COMMIT}"
 
 # dractl prep creates: {artifacts_dir}/dra/{product_id}/{build_id}/
 # Discover the build_id from the resulting directory.
