@@ -82,7 +82,7 @@ EOF
 
   # Stub buildkite-agent: no real agent is running in tests, so replace it with a
   # fake that records every invocation. Tests assert the hook called the right
-  # subcommands (meta-data set, artifact upload) with the right arguments.
+  # subcommands (meta-data set) with the right arguments.
   export AGENT_LOG="${STUB_DIR}/buildkite-agent.log"
   cat >"${STUB_DIR}/buildkite-agent" <<'EOF'
 #!/usr/bin/env bash
@@ -122,23 +122,24 @@ teardown() {
 @test "fails when artifacts directory is absent or empty" {
   run bash "${HOOK}"
   [ "$status" -ne 0 ]
-  echo "$output" | grep -q "dra/apm-server"
+  echo "$output" | grep -q "artifacts"
 }
 
 @test "downloads, verifies, and runs dractl on happy path" {
-  mkdir -p ./dra/apm-server
-  touch ./dra/apm-server/apm-server-9.5.0-SNAPSHOT-amd64.deb
+  mkdir -p ./artifacts
+  touch ./artifacts/apm-server-9.5.0-SNAPSHOT-amd64.deb
   run bash "${HOOK}"
   [ "$status" -eq 0 ]
   grep -q "meta-data set DRA_VERSION_BUILD_ID 9.5.0-ab12cd34" "${AGENT_LOG}"
-  grep -q "artifact upload dra/apm-server/dra" "${AGENT_LOG}"
+  # Upload is intentionally not done by the plugin (handled downstream).
+  ! grep -q "artifact upload" "${AGENT_LOG}"
 }
 
 @test "passes --fail-on-diff to dractl when fail_on_diff is true" {
   export BUILDKITE_PLUGIN_DRA_PREP_FAIL_ON_DIFF=true
   export DRACTL_ARGS_LOG="${STUB_DIR}/dractl-args.log"
-  mkdir -p ./dra/apm-server
-  touch ./dra/apm-server/apm-server-9.5.0-SNAPSHOT-amd64.deb
+  mkdir -p ./artifacts
+  touch ./artifacts/apm-server-9.5.0-SNAPSHOT-amd64.deb
   run bash "${HOOK}"
   [ "$status" -eq 0 ]
   grep -q -- "--fail-on-diff" "${DRACTL_ARGS_LOG}"

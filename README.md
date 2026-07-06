@@ -6,7 +6,7 @@ Buildkite plugin that runs in the same step as your build to generate DRA (Daily
 - `manifest-{stack_version}.json` (schema 2.1.0)
 - `summary-{stack_version}.html`
 
-All three files plus the build artifacts are uploaded to the Buildkite store. A downstream DRA processing pipeline downloads them and ships them to the artifact CDN.
+The metadata plus a copy of the build artifacts are written to a DRA tree on disk (`artifacts/dra/{product_id}/{build_id}/`), and the build id is exposed to downstream steps via the `DRA_VERSION_BUILD_ID` meta-data. Uploading the tree to the artifact store is handled by a separate step.
 
 The binary doing the actual work is [`elastic/dractl`](https://github.com/elastic/dractl) (private). This repo is the public Buildkite plugin shell.
 
@@ -18,10 +18,10 @@ steps:
     key: build-apm-server
     command: |
       make build
-      mkdir -p dra/apm-server
-      cp build/distributions/* dra/apm-server/
+      mkdir -p artifacts
+      cp build/distributions/* artifacts/
     plugins:
-      - elastic/dra-prep#v0.1.0:
+      - elastic/dra-prep#v0.1.1:
           product_id: apm-server
           stack_version: 9.5.0-SNAPSHOT
           workflow: snapshot
@@ -29,7 +29,7 @@ steps:
 
 The plugin runs after your `command` completes. If the command fails, the plugin skips gracefully.
 
-Artifacts must be staged under `dra/{product_id}/` by the build command before the plugin runs. The plugin validates that this directory exists and is non-empty, then passes it to `dractl` and uploads everything under `dra/` to the Buildkite store.
+Artifacts must be staged under `artifacts/` by the build command before the plugin runs. The plugin validates that this directory exists and is non-empty, then passes it to `dractl`, which writes the DRA tree to `artifacts/dra/{product_id}/{build_id}/`.
 
 A downstream step can read the build id:
 
@@ -48,6 +48,7 @@ A downstream step can read the build id:
 | `product_id` | yes | Product identifier, e.g. `apm-server` |
 | `stack_version` | yes | Stack version, e.g. `9.5.0-SNAPSHOT` |
 | `workflow` | yes | `snapshot` or `staging` |
+| `fail_on_diff` | no | Fail the step if `dractl` detects a diff against the previous release's manifest (default `false`) |
 
 ## Requirements
 
