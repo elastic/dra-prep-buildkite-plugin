@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/buildkite-plugins/buildkite-plugin-linter/master/lib/plugin-yaml-schema.yml
 name: DRA Prep
-description: Generate DRA build id, manifest, and summary for the artifacts produced in this step, and upload them to the Buildkite store.
+description: Generate DRA build id, manifest, and summary for the artifacts produced in this step, and upload them to the GCS store.
 author: https://github.com/elastic
 requirements: []
 configuration:
@@ -12,8 +12,12 @@ configuration:
     workflow:
       type: string
       enum: [snapshot, staging]
+    artifacts_dir:
+      type: string
+      description: "Directory containing the flat built artifacts (dractl creates the DRA tree inside it)"
   required:
     - product_id
     - stack_version
     - workflow
+    - artifacts_dir
   additionalProperties: false

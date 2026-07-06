@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A public Buildkite plugin shell. The hook downloads and runs `elastic/dractl` (private Go CLI) to generate DRA (Daily Releasable Artifacts) metadata — build id, manifest, HTML summary — and upload them to the Buildkite store. The plugin has no Go source; all logic lives in `hooks/post-command` (bash) and `elastic/dractl`.
+A public Buildkite plugin shell. The hook downloads and runs `elastic/dractl` (private Go CLI) to generate DRA (Daily Releasable Artifacts) metadata — build id, manifest, HTML summary — and upload them to a GCS bucket. The plugin has no Go source; all logic lives in `hooks/post-command` (bash) and `elastic/dractl`.
 
 ## Development commands
 
@@ -16,9 +16,9 @@ bats tests/                     # run unit tests
 
 ## Architecture
 
-- **`hooks/post-command`** — the entire plugin runtime. Validates config, downloads and SHA256-verifies the pinned `dractl` binary from GitHub Releases, runs `dractl prep`, sets `DRA_VERSION_BUILD_ID` meta-data, and uploads `dra/**/*` artifacts.
-- **`plugin.yml`** — Buildkite plugin schema defining the three required inputs: `product_id`, `stack_version`, `workflow`.
-- **`tests/post-command.bats`** — bats tests with a stubbed `curl` (serves pre-built fixture tarballs) and stubbed `buildkite-agent` (logs calls to a file for assertion). The fake `dractl` lives in `tests/fixtures/dractl`.
+- **`hooks/post-command`** — the entire plugin runtime. Validates config, downloads and SHA256-verifies the pinned `dractl` binary from GitHub Releases, runs `dractl prep`, sets `DRA_VERSION_BUILD_ID` meta-data, and uploads `dra/**/*` to `gs://{gcs_bucket}/dra-builds/{BUILDKITE_PIPELINE_SLUG}/{BUILDKITE_BUILD_NUMBER}/{version_build_id}/` via `gcloud storage cp`.
+- **`plugin.yml`** — Buildkite plugin schema defining the four required inputs: `product_id`, `stack_version`, `workflow`, `gcs_bucket`.
+- **`tests/post-command.bats`** — bats tests with a stubbed `curl` (serves pre-built fixture tarballs), stubbed `buildkite-agent`, and stubbed `gcloud` (each logs calls to a file for assertion). The fake `dractl` lives in `tests/fixtures/dractl`.
 - **`bin/`** — hermit environment. Managed via `hermit install/remove`; never edit symlinks manually.
 - **`.buildkite/pipeline.yml`** — CI entry point triggered by `catalog-info.yaml`. Runs pre-commit and bats on `ubuntu-build-essential`, plugin-linter on a GCP VM.
 

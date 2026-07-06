@@ -13,6 +13,7 @@ echo "--- :package: DRA Prep (dractl ${DRACTL_VERSION})"
 product_id="${BUILDKITE_PLUGIN_DRA_PREP_PRODUCT_ID:-}"
 stack_version="${BUILDKITE_PLUGIN_DRA_PREP_STACK_VERSION:-}"
 workflow="${BUILDKITE_PLUGIN_DRA_PREP_WORKFLOW:-}"
+artifacts_dir="${BUILDKITE_PLUGIN_DRA_PREP_ARTIFACTS_DIR:-}"
 
 [[ -n "${product_id}" ]] || {
   echo "ERROR: plugin config 'product_id' is required" >&2
@@ -26,6 +27,19 @@ workflow="${BUILDKITE_PLUGIN_DRA_PREP_WORKFLOW:-}"
   echo "ERROR: plugin config 'workflow' is required" >&2
   exit 1
 }
+[[ -n "${artifacts_dir}" ]] || {
+  echo "ERROR: plugin config 'artifacts_dir' is required" >&2
+  exit 1
+}
+
+case "${workflow}" in
+  snapshot) gcs_bucket="elastic-artifacts-snapshot" ;;
+  staging)  gcs_bucket="elastic-artifacts-staging"  ;;
+  *)
+    echo "ERROR: unknown workflow '${workflow}'; expected 'snapshot' or 'staging'" >&2
+    exit 1
+    ;;
+esac
 
 if [[ -z "${VAULT_GITHUB_TOKEN:-}" ]]; then
   echo "ERROR: VAULT_GITHUB_TOKEN is not set." >&2
@@ -33,10 +47,8 @@ if [[ -z "${VAULT_GITHUB_TOKEN:-}" ]]; then
   exit 1
 fi
 
-artifacts_dir="dra/${product_id}"
 if [[ ! -d "${artifacts_dir}" ]] || [[ -z "$(find "${artifacts_dir}" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
-  echo "ERROR: expected artifacts directory '${artifacts_dir}' is absent or empty." >&2
-  echo "       Stage your build output under dra/${product_id}/ before the plugin runs." >&2
+  echo "ERROR: artifacts_dir '${artifacts_dir}' is absent or empty." >&2
   exit 1
 fi
 
@@ -86,13 +98,33 @@ echo "Running dractl prep..."
   --stack-version "${stack_version}" \
   --workflow "${workflow}" \
   --artifacts-dir "${artifacts_dir}" \
-  --output-dir ./dra \
-  --branch "${BUILDKITE_BRANCH}" \
-  --commit "${BUILDKITE_COMMIT}"
+  --branch        "${BUILDKITE_BRANCH}" \
+  --commit        "${BUILDKITE_COMMIT}"
 
-build_id="$(cat ./dra/build_id)"
+# dractl prep creates: {artifacts_dir}/dra/{product_id}/{build_id}/
+# Discover the build_id from the resulting directory.
+dra_product_dir="${artifacts_dir}/dra/${product_id}"
+build_dirs=()
+while IFS= read -r d; do
+  build_dirs+=("$d")
+done < <(find "${dra_product_dir}" -mindepth 1 -maxdepth 1 -type d)
+
+if [[ ${#build_dirs[@]} -eq 0 ]]; then
+  echo "ERROR: dractl prep produced no build directory under ${dra_product_dir}" >&2
+  exit 1
+fi
+if [[ ${#build_dirs[@]} -gt 1 ]]; then
+  echo "ERROR: expected exactly one build directory under ${dra_product_dir}, found ${#build_dirs[@]}:" >&2
+  printf '  %s\n' "${build_dirs[@]}" >&2
+  exit 1
+fi
+
+build_id="$(basename "${build_dirs[0]}")"
 echo "Setting DRA_VERSION_BUILD_ID=${build_id}"
 buildkite-agent meta-data set DRA_VERSION_BUILD_ID "${build_id}"
 
-echo "Uploading DRA artifacts to Buildkite store..."
-buildkite-agent artifact upload "dra/**/*"
+gcs_dest="gs://${gcs_bucket}/dra-builds/${BUILDKITE_PIPELINE_SLUG}/${BUILDKITE_BUILD_NUMBER}/${build_id}/"
+echo "Uploading DRA artifacts to ${gcs_dest}..."
+gcloud storage cp --recursive "${dra_product_dir}/${build_id}/" "${gcs_dest}"
+
+echo "Upload complete: ${gcs_dest}"

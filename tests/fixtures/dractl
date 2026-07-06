@@ -1,27 +1,32 @@
 #!/usr/bin/env bash
-# Fake dractl binary used by bats tests — mimics `dractl prep` output
+# Fake dractl binary used by bats tests.
+# Simulates `dractl prep`: creates {artifacts_dir}/dra/{product_id}/{build_id}/ with
+# manifest, summary, and downloads/ — matching what layout.Create produces.
 set -euo pipefail
 
-output_dir="./dra"
+artifacts_dir=""
+product_id=""
 stack_version="9.5.0-SNAPSHOT"
+build_id="9.5.0-ab12cd34"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --output-dir)
-      output_dir="$2"
-      shift 2
-      ;;
-    --stack-version)
-      stack_version="$2"
-      shift 2
-      ;;
+    --artifacts-dir) artifacts_dir="$2"; shift 2 ;;
+    --product-id)    product_id="$2";    shift 2 ;;
+    --stack-version) stack_version="$2"; shift 2 ;;
     *) shift ;;
   esac
 done
 
-mkdir -p "${output_dir}"
-echo "9.5.0-ab12cd34" >"${output_dir}/build_id"
-echo '{"manifest_version":"2.1.0","build_id":"9.5.0-ab12cd34"}' \
-  >"${output_dir}/manifest-${stack_version}.json"
+dra_prefix="${artifacts_dir}/dra/${product_id}/${build_id}"
+mkdir -p "${dra_prefix}/downloads/${product_id}"
+
+echo '{"manifest_version":"2.1.0","build_id":"'"${build_id}"'"}' \
+  >"${dra_prefix}/manifest-${stack_version}.json"
 echo "<html><body>DRA Summary for ${stack_version}</body></html>" \
-  >"${output_dir}/summary-${stack_version}.html"
+  >"${dra_prefix}/summary-${stack_version}.html"
+
+# Simulate layout.Create copying flat artifacts into downloads/
+find "${artifacts_dir}" -maxdepth 1 -type f | while read -r f; do
+  cp "${f}" "${dra_prefix}/downloads/${product_id}/"
+done

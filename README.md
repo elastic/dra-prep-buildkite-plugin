@@ -6,7 +6,7 @@ Buildkite plugin that runs in the same step as your build to generate DRA (Daily
 - `manifest-{stack_version}.json` (schema 2.1.0)
 - `summary-{stack_version}.html`
 
-All three files plus the build artifacts are uploaded to the Buildkite store. A downstream DRA processing pipeline downloads them and ships them to the artifact CDN.
+All three files plus the build artifacts are uploaded to a GCS bucket. A downstream DRA processing pipeline reads them from there and ships them to the artifact CDN.
 
 The binary doing the actual work is [`elastic/dractl`](https://github.com/elastic/dractl) (private). This repo is the public Buildkite plugin shell.
 
@@ -29,7 +29,13 @@ steps:
 
 The plugin runs after your `command` completes. If the command fails, the plugin skips gracefully.
 
-Artifacts must be staged under `dra/{product_id}/` by the build command before the plugin runs. The plugin validates that this directory exists and is non-empty, then passes it to `dractl` and uploads everything under `dra/` to the Buildkite store.
+Artifacts must be staged under `dra/{product_id}/` by the build command before the plugin runs. The plugin validates that this directory exists and is non-empty, then passes it to `dractl` and uploads everything under `dra/` to:
+
+```
+gs://{gcs_bucket}/dra-builds/{BUILDKITE_PIPELINE_SLUG}/{BUILDKITE_BUILD_NUMBER}/{version_build_id}/
+```
+
+`BUILDKITE_PIPELINE_SLUG` and `BUILDKITE_BUILD_NUMBER` are set automatically by Buildkite. The build number is included so the downstream DRA processing pipeline can tell apart two builds of the same product for the same stack version.
 
 A downstream step can read the build id:
 
@@ -53,6 +59,7 @@ A downstream step can read the build id:
 
 The plugin downloads the `dractl` binary at runtime from `elastic/dractl` GitHub Releases. The pipeline's `GithubPermissionSet` must include `elastic/dractl` so the agent has a `VAULT_GITHUB_TOKEN` with read access to that private repo.
 
+The plugin uploads to GCS via `gcloud storage cp`, authenticated through the shared `dra-build-pipelines` Workload Identity Federation provider. The IAM policy on the target buckets restricts each pipeline to writing under its own `dra-builds/{pipeline-slug}/` prefix.
 The plugin runs on Linux (amd64 and arm64). All Elastic Buildkite agents meet this requirement.
 
 ## Release runbook

@@ -16,9 +16,16 @@ setup() {
   export BUILDKITE_PLUGIN_DRA_PREP_PRODUCT_ID=apm-server
   export BUILDKITE_PLUGIN_DRA_PREP_STACK_VERSION=9.5.0-SNAPSHOT
   export BUILDKITE_PLUGIN_DRA_PREP_WORKFLOW=snapshot
+  export BUILDKITE_PLUGIN_DRA_PREP_ARTIFACTS_DIR="${WORK_DIR}/artifacts"
   export VAULT_GITHUB_TOKEN=fake-token
   export BUILDKITE_BRANCH=main
   export BUILDKITE_COMMIT=abc123
+  export BUILDKITE_PIPELINE_SLUG=apm-server
+  export BUILDKITE_BUILD_NUMBER=11
+
+  # Seed artifacts dir with a flat artifact (what the producer step produces)
+  mkdir -p "${BUILDKITE_PLUGIN_DRA_PREP_ARTIFACTS_DIR}"
+  touch "${BUILDKITE_PLUGIN_DRA_PREP_ARTIFACTS_DIR}/apm-server-9.5.0-SNAPSHOT-linux-x86_64.tar.gz"
 
   # Determine the arch the hook will request (matches hook's uname logic)
   case "$(uname -m)" in
@@ -58,15 +65,21 @@ EOF
   chmod +x "${STUB_DIR}/curl"
   export CURL_STUB_DIR="${STUB_DIR}"
 
-  # Stub buildkite-agent: no real agent is running in tests, so replace it with a
-  # fake that records every invocation. Tests assert the hook called the right
-  # subcommands (meta-data set, artifact upload) with the right arguments.
+  # Stub buildkite-agent: records every invocation
   export AGENT_LOG="${STUB_DIR}/buildkite-agent.log"
   cat >"${STUB_DIR}/buildkite-agent" <<'EOF'
 #!/usr/bin/env bash
 echo "buildkite-agent $*" >> "${AGENT_LOG}"
 EOF
   chmod +x "${STUB_DIR}/buildkite-agent"
+
+  # Stub gcloud: records every invocation
+  export GCLOUD_LOG="${STUB_DIR}/gcloud.log"
+  cat >"${STUB_DIR}/gcloud" <<'EOF'
+#!/usr/bin/env bash
+echo "gcloud $*" >> "${GCLOUD_LOG}"
+EOF
+  chmod +x "${STUB_DIR}/gcloud"
 
   export PATH="${STUB_DIR}:${PATH}"
 }
@@ -90,6 +103,13 @@ teardown() {
   echo "$output" | grep -q "product_id"
 }
 
+@test "fails with clear error when artifacts_dir is missing" {
+  unset BUILDKITE_PLUGIN_DRA_PREP_ARTIFACTS_DIR
+  run bash "${HOOK}"
+  [ "$status" -ne 0 ]
+  echo "$output" | grep -q "artifacts_dir"
+}
+
 @test "fails with GithubPermissionSet hint when VAULT_GITHUB_TOKEN is missing" {
   unset VAULT_GITHUB_TOKEN
   run bash "${HOOK}"
@@ -97,18 +117,26 @@ teardown() {
   echo "$output" | grep -qi "GithubPermissionSet"
 }
 
-@test "fails when artifacts directory is absent or empty" {
-  run bash "${HOOK}"
-  [ "$status" -ne 0 ]
-  echo "$output" | grep -q "dra/apm-server"
-}
-
 @test "downloads, verifies, and runs dractl on happy path" {
-  mkdir -p ./dra/apm-server
-  touch ./dra/apm-server/apm-server-9.5.0-SNAPSHOT-amd64.deb
+  # Fake dractl simulates what layout.Create produces:
+  # {artifacts_dir}/dra/{product_id}/{build_id}/
   run bash "${HOOK}"
   [ "$status" -eq 0 ]
   # Fake dractl wrote build_id = "9.5.0-ab12cd34"
   grep -q "meta-data set DRA_VERSION_BUILD_ID 9.5.0-ab12cd34" "${AGENT_LOG}"
-  grep -q "artifact upload dra" "${AGENT_LOG}"
+  grep -q "gs://elastic-artifacts-snapshot/dra-builds/apm-server/11/9.5.0-ab12cd34/" "${GCLOUD_LOG}"
+}
+
+@test "derives gcs bucket from workflow: staging" {
+  export BUILDKITE_PLUGIN_DRA_PREP_WORKFLOW=staging
+  run bash "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -q "gs://elastic-artifacts-staging/" "${GCLOUD_LOG}"
+}
+
+@test "fails when artifacts_dir is absent or empty" {
+  rm -rf "${BUILDKITE_PLUGIN_DRA_PREP_ARTIFACTS_DIR}"
+  run bash "${HOOK}"
+  [ "$status" -ne 0 ]
+  echo "$output" | grep -q "artifacts_dir"
 }
