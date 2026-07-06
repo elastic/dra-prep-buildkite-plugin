@@ -2,6 +2,10 @@
 # Fake dractl binary used by bats tests — mimics `dractl prep` output
 set -euo pipefail
 
+if [[ -n "${DRACTL_ARGS_LOG:-}" ]]; then
+  printf '%s\n' "$*" >>"${DRACTL_ARGS_LOG}"
+fi
+
 artifacts_dir="."
 stack_version="9.5.0-SNAPSHOT"
 product_id="apm-server"

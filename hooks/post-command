@@ -34,6 +34,11 @@ if [[ -z "${VAULT_GITHUB_TOKEN:-}" ]]; then
   exit 1
 fi
 
+if ! command -v jq >/dev/null 2>&1; then
+  echo "ERROR: jq is required but was not found in PATH." >&2
+  exit 1
+fi
+
 artifacts_dir="dra/${product_id}"
 if [[ ! -d "${artifacts_dir}" ]] || [[ -z "$(find "${artifacts_dir}" -mindepth 1 -maxdepth 1 -print -quit)" ]]; then
   echo "ERROR: expected artifacts directory '${artifacts_dir}' is absent or empty." >&2
@@ -53,20 +58,34 @@ esac
 tmp="$(mktemp -d)"
 trap 'rm -rf "${tmp}"' EXIT
 
-release_url="https://github.com/elastic/dractl/releases/download/${DRACTL_VERSION}"
 archive="dractl_${DRACTL_VERSION#v}_linux_${arch}.tar.gz"
 
-echo "Downloading ${archive}..."
-curl -fsSL \
+# elastic/dractl is a private repo, so release assets must be fetched via the
+# API's asset endpoint (which returns a signed redirect) rather than the
+# github.com/.../releases/download/... URL, which only works for public repos.
+echo "Resolving release assets for ${DRACTL_VERSION}..."
+release_json="$(curl -fsSL \
   -H "Authorization: Bearer ${VAULT_GITHUB_TOKEN}" \
-  -H "Accept: application/octet-stream" \
-  -o "${tmp}/${archive}" \
-  "${release_url}/${archive}"
+  -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/repos/elastic/dractl/releases/tags/${DRACTL_VERSION}")"
 
-curl -fsSL \
-  -H "Authorization: Bearer ${VAULT_GITHUB_TOKEN}" \
-  -o "${tmp}/checksums.txt" \
-  "${release_url}/checksums.txt"
+download_asset() {
+  local name="$1" dest="$2" asset_url
+  asset_url="$(jq -r --arg name "${name}" '.assets[] | select(.name == $name) | .url' <<<"${release_json}")"
+  [[ -n "${asset_url}" ]] || {
+    echo "ERROR: release asset '${name}' not found in dractl ${DRACTL_VERSION}" >&2
+    exit 1
+  }
+  curl -fsSL \
+    -H "Authorization: Bearer ${VAULT_GITHUB_TOKEN}" \
+    -H "Accept: application/octet-stream" \
+    -o "${dest}" \
+    "${asset_url}"
+}
+
+echo "Downloading ${archive}..."
+download_asset "${archive}" "${tmp}/${archive}"
+download_asset "checksums.txt" "${tmp}/checksums.txt"
 
 echo "Verifying checksum..."
 expected="$(awk -v f="${archive}" '$2 == f {print $1}' "${tmp}/checksums.txt")"
@@ -93,7 +112,11 @@ dractl_args=(
 [[ "${fail_on_diff}" == "true" ]] && dractl_args+=(--fail-on-diff)
 "${tmp}/dractl" prep "${dractl_args[@]}"
 
-manifest="$(find "${artifacts_dir}/dra/${product_id}" -name "manifest-${stack_version}.json" | head -1)"
+manifest="$(find "${artifacts_dir}/dra/${product_id}" -name "manifest-${stack_version}.json" | sort | head -1)"
+[[ -n "${manifest}" ]] || {
+  echo "ERROR: no manifest-${stack_version}.json found under ${artifacts_dir}/dra/${product_id}" >&2
+  exit 1
+}
 build_id="$(jq -r '.build_id' "${manifest}")"
 echo "Setting DRA_VERSION_BUILD_ID=${build_id}"
 buildkite-agent meta-data set DRA_VERSION_BUILD_ID "${build_id}"
