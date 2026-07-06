@@ -17,7 +17,7 @@ bats tests/                     # run unit tests
 ## Architecture
 
 - **`hooks/post-command`** — the entire plugin runtime. Validates config, downloads and SHA256-verifies the pinned `dractl` binary from GitHub Releases, runs `dractl prep`, sets `DRA_VERSION_BUILD_ID` meta-data, and uploads `dra/**/*` to `gs://{gcs_bucket}/dra-builds/{BUILDKITE_PIPELINE_SLUG}/{BUILDKITE_BUILD_NUMBER}/{version_build_id}/` via `gcloud storage cp`.
-- **`plugin.yml`** — Buildkite plugin schema defining the four required inputs: `product_id`, `stack_version`, `workflow`, `gcs_bucket`.
+- **`plugin.yml`** — Buildkite plugin schema defining the four required inputs: `product_id`, `stack_version`, `workflow`, `artifacts_dir`.
 - **`tests/post-command.bats`** — bats tests with a stubbed `curl` (serves pre-built fixture tarballs), stubbed `buildkite-agent`, and stubbed `gcloud` (each logs calls to a file for assertion). The fake `dractl` lives in `tests/fixtures/dractl`.
 - **`bin/`** — hermit environment. Managed via `hermit install/remove`; never edit symlinks manually.
 - **`.buildkite/pipeline.yml`** — CI entry point triggered by `catalog-info.yaml`. Runs pre-commit and bats on `ubuntu-build-essential`, plugin-linter on a GCP VM.
