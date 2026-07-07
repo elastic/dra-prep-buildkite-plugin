@@ -22,3 +22,13 @@ steps:
     agents:
       provider: "gcp"
       image: family/core-ubuntu-2204
+
+  - label: ":smoke: Integration test"
+    command: ".buildkite/scripts/integration-test.sh"
+    plugins:
+      - elastic/dra-prep#$BUILDKITE_COMMIT:
+          product_id: smoke-test
+          stack_version: "9.5.0-SNAPSHOT"
+          workflow: snapshot
+    agents:
+      image: "docker.elastic.co/ci-agent-images/ubuntu-build-essential:latest@sha256:f25d024a1b9e2490c6201a2ef9822d73e604911e1a616d0f2b02537e5176f66c"

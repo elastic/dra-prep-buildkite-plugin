@@ -28,7 +28,7 @@ setup() {
   esac
 
   # Build a real tarball from the fake dractl fixture (name matches goreleaser template)
-  local version="0.1.0"
+  local version="0.1.1"
   local archive="dractl_${version}_linux_${arch}.tar.gz"
   tar -czf "${STUB_DIR}/${archive}" \
     -C "${FIXTURES_DIR}" dractl
@@ -38,7 +38,20 @@ setup() {
   sha256="$(sha256sum "${STUB_DIR}/${archive}" | awk '{print $1}')"
   echo "${sha256}  ${archive}" >"${STUB_DIR}/checksums.txt"
 
-  # Stub curl: copies files from CURL_STUB_DIR by basename of URL
+  # Fake GitHub "releases/tags/..." response: maps asset names to fake
+  # per-asset API URLs, mirroring the real API's asset-resolution flow used
+  # for private repos.
+  cat >"${STUB_DIR}/release.json" <<EOF
+{
+  "assets": [
+    {"name": "${archive}", "url": "https://api.github.com/repos/elastic/dractl/releases/assets/1"},
+    {"name": "checksums.txt", "url": "https://api.github.com/repos/elastic/dractl/releases/assets/2"}
+  ]
+}
+EOF
+
+  # Stub curl: serves the fake release metadata for the "tags" lookup, and
+  # copies the matching fixture file for each per-asset download URL.
   cat >"${STUB_DIR}/curl" <<'EOF'
 #!/usr/bin/env bash
 output_file=""
@@ -52,15 +65,24 @@ while [[ $# -gt 0 ]]; do
     *) shift ;;
   esac
 done
-filename="$(basename "${url}")"
-cp "${CURL_STUB_DIR}/${filename}" "${output_file}"
+
+case "${url}" in
+  */releases/tags/*) cat "${CURL_STUB_DIR}/release.json" ;;
+  */releases/assets/1) cp "${CURL_STUB_DIR}/${ARCHIVE_NAME}" "${output_file}" ;;
+  */releases/assets/2) cp "${CURL_STUB_DIR}/checksums.txt" "${output_file}" ;;
+  *)
+    echo "unstubbed curl request: ${url}" >&2
+    exit 1
+    ;;
+esac
 EOF
   chmod +x "${STUB_DIR}/curl"
   export CURL_STUB_DIR="${STUB_DIR}"
+  export ARCHIVE_NAME="${archive}"
 
   # Stub buildkite-agent: no real agent is running in tests, so replace it with a
   # fake that records every invocation. Tests assert the hook called the right
-  # subcommands (meta-data set, artifact upload) with the right arguments.
+  # subcommands (meta-data set) with the right arguments.
   export AGENT_LOG="${STUB_DIR}/buildkite-agent.log"
   cat >"${STUB_DIR}/buildkite-agent" <<'EOF'
 #!/usr/bin/env bash
@@ -100,15 +122,25 @@ teardown() {
 @test "fails when artifacts directory is absent or empty" {
   run bash "${HOOK}"
   [ "$status" -ne 0 ]
-  echo "$output" | grep -q "dra/apm-server"
+  echo "$output" | grep -q "artifacts"
 }
 
 @test "downloads, verifies, and runs dractl on happy path" {
-  mkdir -p ./dra/apm-server
-  touch ./dra/apm-server/apm-server-9.5.0-SNAPSHOT-amd64.deb
+  mkdir -p ./artifacts
+  touch ./artifacts/apm-server-9.5.0-SNAPSHOT-amd64.deb
   run bash "${HOOK}"
   [ "$status" -eq 0 ]
-  # Fake dractl wrote build_id = "9.5.0-ab12cd34"
   grep -q "meta-data set DRA_VERSION_BUILD_ID 9.5.0-ab12cd34" "${AGENT_LOG}"
-  grep -q "artifact upload dra" "${AGENT_LOG}"
+  # Upload is intentionally not done by the plugin (handled downstream).
+  ! grep -q "artifact upload" "${AGENT_LOG}"
+}
+
+@test "passes --fail-on-diff to dractl when fail_on_diff is true" {
+  export BUILDKITE_PLUGIN_DRA_PREP_FAIL_ON_DIFF=true
+  export DRACTL_ARGS_LOG="${STUB_DIR}/dractl-args.log"
+  mkdir -p ./artifacts
+  touch ./artifacts/apm-server-9.5.0-SNAPSHOT-amd64.deb
+  run bash "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -q -- "--fail-on-diff" "${DRACTL_ARGS_LOG}"
 }

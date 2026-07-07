@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A public Buildkite plugin shell. The hook downloads and runs `elastic/dractl` (private Go CLI) to generate DRA (Daily Releasable Artifacts) metadata — build id, manifest, HTML summary — and upload them to the Buildkite store. The plugin has no Go source; all logic lives in `hooks/post-command` (bash) and `elastic/dractl`.
+A public Buildkite plugin shell. The hook downloads and runs `elastic/dractl` (private Go CLI) to generate DRA (Daily Releasable Artifacts) metadata — build id, manifest, HTML summary — and set the `DRA_VERSION_BUILD_ID` meta-data. The plugin has no Go source; all logic lives in `hooks/post-command` (bash) and `elastic/dractl`.
 
 ## Development commands
 
@@ -16,7 +16,7 @@ bats tests/                     # run unit tests
 
 ## Architecture
 
-- **`hooks/post-command`** — the entire plugin runtime. Validates config, downloads and SHA256-verifies the pinned `dractl` binary from GitHub Releases, runs `dractl prep`, sets `DRA_VERSION_BUILD_ID` meta-data, and uploads `dra/**/*` artifacts.
+- **`hooks/post-command`** — the entire plugin runtime. Validates config, resolves and SHA256-verifies the pinned `dractl` binary from `elastic/dractl` GitHub Releases (via the API asset endpoint, required for private repos), runs `dractl prep` (which writes the DRA tree under `artifacts/dra/{product_id}/{build_id}/`), and sets `DRA_VERSION_BUILD_ID` meta-data read from the generated manifest via `jq`. Does not upload the tree — that is handled by a separate step.
 - **`plugin.yml`** — Buildkite plugin schema defining the three required inputs: `product_id`, `stack_version`, `workflow`.
 - **`tests/post-command.bats`** — bats tests with a stubbed `curl` (serves pre-built fixture tarballs) and stubbed `buildkite-agent` (logs calls to a file for assertion). The fake `dractl` lives in `tests/fixtures/dractl`.
 - **`bin/`** — hermit environment. Managed via `hermit install/remove`; never edit symlinks manually.
