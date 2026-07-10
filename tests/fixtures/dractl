@@ -1,37 +1,41 @@
 #!/usr/bin/env bash
-# Fake dractl binary used by bats tests — mimics `dractl prep` output
+# Fake dractl binary used by bats tests — mimics `dractl prep` and `dractl upload` output
 set -euo pipefail
 
+subcommand="${1:-}"
+shift
+
 if [[ -n "${DRACTL_ARGS_LOG:-}" ]]; then
-  printf '%s\n' "$*" >>"${DRACTL_ARGS_LOG}"
+  printf '%s %s\n' "${subcommand}" "$*" >>"${DRACTL_ARGS_LOG}"
 fi
 
-artifacts_dir="."
-stack_version="9.5.0-SNAPSHOT"
-product_id="apm-server"
+case "${subcommand}" in
+  prep)
+    artifacts_dir="."
+    stack_version="9.5.0-SNAPSHOT"
+    product_id="apm-server"
 
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-    --artifacts-dir)
-      artifacts_dir="$2"
-      shift 2
-      ;;
-    --stack-version)
-      stack_version="$2"
-      shift 2
-      ;;
-    --product-id)
-      product_id="$2"
-      shift 2
-      ;;
-    *) shift ;;
-  esac
-done
+    while [[ $# -gt 0 ]]; do
+      case "$1" in
+        --artifacts-dir) artifacts_dir="$2"; shift 2 ;;
+        --stack-version) stack_version="$2"; shift 2 ;;
+        --product-id) product_id="$2"; shift 2 ;;
+        *) shift ;;
+      esac
+    done
 
-build_id="9.5.0-ab12cd34"
-dra_prefix="${artifacts_dir}/dra/${product_id}/${build_id}"
-mkdir -p "${dra_prefix}/downloads/${product_id}"
-echo '{"manifest_version":"2.1.0","build_id":"9.5.0-ab12cd34"}' \
-  >"${dra_prefix}/manifest-${stack_version}.json"
-echo "<html><body>DRA Summary for ${stack_version}</body></html>" \
-  >"${dra_prefix}/summary-${stack_version}.html"
+    build_id="9.5.0-ab12cd34"
+    dra_prefix="${artifacts_dir}/dra/${product_id}/${build_id}"
+    mkdir -p "${dra_prefix}/downloads/${product_id}"
+    echo '{"manifest_version":"2.1.0","build_id":"9.5.0-ab12cd34"}' \
+      >"${dra_prefix}/manifest-${stack_version}.json"
+    echo "<html><body>DRA Summary for ${stack_version}</body></html>" \
+      >"${dra_prefix}/summary-${stack_version}.html"
+    ;;
+  upload)
+    ;;
+  *)
+    echo "unknown dractl subcommand: ${subcommand}" >&2
+    exit 1
+    ;;
+esac
