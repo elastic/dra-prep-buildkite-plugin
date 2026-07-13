@@ -138,8 +138,8 @@ if [[ "${upload}" == "true" ]]; then
     --product-id "${product_id}" \
     --build-id "${build_id}" \
     --workflow "${workflow}" \
-    --pipeline-slug "${BUILDKITE_PIPELINE_SLUG}" \
-    --build-number "${BUILDKITE_BUILD_NUMBER}"
+    --pipeline-slug "${BUILDKITE_PIPELINE_SLUG:-}" \
+    --build-number "${BUILDKITE_BUILD_NUMBER:-}"
   echo "Upload complete."
 else
   echo "--- :skip: Skipping GCS upload (upload: false)"

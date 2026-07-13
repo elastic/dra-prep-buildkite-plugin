@@ -3,7 +3,7 @@
 set -euo pipefail
 
 subcommand="${1:-}"
-shift
+shift || true
 
 if [[ -n "${DRACTL_ARGS_LOG:-}" ]]; then
   printf '%s %s\n' "${subcommand}" "$*" >>"${DRACTL_ARGS_LOG}"

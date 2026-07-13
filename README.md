@@ -6,7 +6,9 @@ Buildkite plugin that runs in the same step as your build to generate DRA (Daily
 - `manifest-{stack_version}.json` (schema 2.1.0)
 - `summary-{stack_version}.html`
 
-The metadata plus a copy of the build artifacts are written to a DRA tree on disk (`artifacts/dra/{product_id}/{build_id}/`), and the build id is exposed to downstream steps via the `DRA_VERSION_BUILD_ID` meta-data. Uploading the tree to the artifact store is handled by a separate step.
+The metadata plus a copy of the build artifacts are written to a DRA tree on disk (`artifacts/dra/{product_id}/{build_id}/`), uploaded to GCS (`gs://elastic-artifacts-{workflow}/dra-builds/{product_id}/{build_number}/{build_id}/`) via Workload Identity Federation, and the build id is exposed to downstream steps via the `DRA_VERSION_BUILD_ID` meta-data.
+
+> **Upgrading from v0.1.1?** This version uploads the DRA tree to GCS by default. Before bumping, ensure your pipeline slug is registered in the [release-artifacts Terraform](https://github.com/elastic/infra/tree/master/terraform/providers/gcp/env/release-artifacts/elastic-release.tfvars), otherwise the upload will fail with a 403.
 
 The binary doing the actual work is [`elastic/dractl`](https://github.com/elastic/dractl) (private). This repo is the public Buildkite plugin shell.
 
@@ -49,6 +51,7 @@ A downstream step can read the build id:
 | `stack_version` | yes | Stack version, e.g. `9.5.0-SNAPSHOT` |
 | `workflow` | yes | `snapshot` or `staging` |
 | `fail_on_diff` | no | Fail the step if `dractl` detects a diff against the previous release's manifest (default `false`) |
+| `upload` | no | Upload the DRA tree to GCS after `dractl prep` (default `true`). Set to `false` in CI smoke tests.
 
 ## Requirements
 
