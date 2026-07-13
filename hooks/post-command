@@ -14,6 +14,7 @@ product_id="${BUILDKITE_PLUGIN_DRA_PREP_PRODUCT_ID:-}"
 stack_version="${BUILDKITE_PLUGIN_DRA_PREP_STACK_VERSION:-}"
 workflow="${BUILDKITE_PLUGIN_DRA_PREP_WORKFLOW:-}"
 fail_on_diff="${BUILDKITE_PLUGIN_DRA_PREP_FAIL_ON_DIFF:-false}"
+upload="${BUILDKITE_PLUGIN_DRA_PREP_UPLOAD:-true}"
 
 [[ -n "${product_id}" ]] || {
   echo "ERROR: plugin config 'product_id' is required" >&2
@@ -130,13 +131,16 @@ build_id="$(jq -r '.build_id' "${manifest}")"
 echo "Setting DRA_VERSION_BUILD_ID=${build_id}"
 buildkite-agent meta-data set DRA_VERSION_BUILD_ID "${build_id}"
 
-echo "--- :gcp: Uploading DRA artifacts to GCS..."
-"${tmp}/dractl" upload \
-  --artifacts-dir "${artifacts_dir}" \
-  --product-id "${product_id}" \
-  --build-id "${build_id}" \
-  --workflow "${workflow}" \
-  --pipeline-slug "${BUILDKITE_PIPELINE_SLUG}" \
-  --build-number "${BUILDKITE_BUILD_NUMBER}"
-
-echo "Upload complete."
+if [[ "${upload}" == "true" ]]; then
+  echo "--- :gcp: Uploading DRA artifacts to GCS..."
+  "${tmp}/dractl" upload \
+    --artifacts-dir "${artifacts_dir}" \
+    --product-id "${product_id}" \
+    --build-id "${build_id}" \
+    --workflow "${workflow}" \
+    --pipeline-slug "${BUILDKITE_PIPELINE_SLUG}" \
+    --build-number "${BUILDKITE_BUILD_NUMBER}"
+  echo "Upload complete."
+else
+  echo "--- :skip: Skipping GCS upload (upload: false)"
+fi

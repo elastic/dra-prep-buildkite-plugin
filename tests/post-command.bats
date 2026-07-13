@@ -145,3 +145,13 @@ teardown() {
   [ "$status" -eq 0 ]
   grep -q -- "--fail-on-diff" "${DRACTL_ARGS_LOG}"
 }
+
+@test "skips upload when upload is false" {
+  export BUILDKITE_PLUGIN_DRA_PREP_UPLOAD=false
+  mkdir -p ./artifacts
+  touch ./artifacts/apm-server-9.5.0-SNAPSHOT-amd64.deb
+  run bash "${HOOK}"
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -qi "skip"
+  ! grep -q "^upload" "${DRACTL_ARGS_LOG}"
+}
