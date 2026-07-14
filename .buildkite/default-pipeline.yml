@@ -30,5 +30,6 @@ steps:
           product_id: smoke-test
           stack_version: "9.5.0-SNAPSHOT"
           workflow: snapshot
+          upload: false
     agents:
       image: "docker.elastic.co/ci-agent-images/ubuntu-build-essential:latest@sha256:f25d024a1b9e2490c6201a2ef9822d73e604911e1a616d0f2b02537e5176f66c"

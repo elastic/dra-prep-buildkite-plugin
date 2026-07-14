@@ -19,6 +19,9 @@ setup() {
   export VAULT_GITHUB_TOKEN=fake-token
   export BUILDKITE_BRANCH=main
   export BUILDKITE_COMMIT=abc123
+  export BUILDKITE_PIPELINE_SLUG=apm-server
+  export BUILDKITE_BUILD_NUMBER=42
+  export DRACTL_ARGS_LOG="${STUB_DIR}/dractl-args.log"
 
   # Determine the arch the hook will request (matches hook's uname logic)
   case "$(uname -m)" in
@@ -28,7 +31,7 @@ setup() {
   esac
 
   # Build a real tarball from the fake dractl fixture (name matches goreleaser template)
-  local version="0.1.1"
+  local version="0.1.2"
   local archive="dractl_${version}_linux_${arch}.tar.gz"
   tar -czf "${STUB_DIR}/${archive}" \
     -C "${FIXTURES_DIR}" dractl
@@ -131,16 +134,24 @@ teardown() {
   run bash "${HOOK}"
   [ "$status" -eq 0 ]
   grep -q "meta-data set DRA_VERSION_BUILD_ID 9.5.0-ab12cd34" "${AGENT_LOG}"
-  # Upload is intentionally not done by the plugin (handled downstream).
-  ! grep -q "artifact upload" "${AGENT_LOG}"
+  grep -q "upload.*--pipeline-slug apm-server.*--build-number 42" "${DRACTL_ARGS_LOG}"
 }
 
 @test "passes --fail-on-diff to dractl when fail_on_diff is true" {
   export BUILDKITE_PLUGIN_DRA_PREP_FAIL_ON_DIFF=true
-  export DRACTL_ARGS_LOG="${STUB_DIR}/dractl-args.log"
   mkdir -p ./artifacts
   touch ./artifacts/apm-server-9.5.0-SNAPSHOT-amd64.deb
   run bash "${HOOK}"
   [ "$status" -eq 0 ]
   grep -q -- "--fail-on-diff" "${DRACTL_ARGS_LOG}"
+}
+
+@test "skips upload when upload is false" {
+  export BUILDKITE_PLUGIN_DRA_PREP_UPLOAD=false
+  mkdir -p ./artifacts
+  touch ./artifacts/apm-server-9.5.0-SNAPSHOT-amd64.deb
+  run bash "${HOOK}"
+  [ "$status" -eq 0 ]
+  echo "$output" | grep -qi "skip"
+  ! grep -q "^upload" "${DRACTL_ARGS_LOG}"
 }
