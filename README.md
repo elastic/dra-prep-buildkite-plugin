@@ -8,7 +8,7 @@ Buildkite plugin that runs in the same step as your build to generate DRA (Daily
 
 The metadata plus a copy of the build artifacts are written to a DRA tree on disk (`artifacts/dra/{product_id}/{build_id}/`), uploaded to GCS (`gs://elastic-artifacts-{workflow}/dra-builds/{product_id}/{build_number}/{build_id}/`) via Workload Identity Federation, and the build id is exposed to downstream steps via the `DRA_VERSION_BUILD_ID` meta-data.
 
-> **Upgrading from v0.1.1?** This version uploads the DRA tree to GCS by default. Before bumping, ensure your pipeline slug is registered in the [release-artifacts Terraform](https://github.com/elastic/infra/tree/master/terraform/providers/gcp/env/release-artifacts/elastic-release.tfvars), otherwise the upload will fail with a 403.
+> **Upgrading from v0.1.2?** v0.1.3 switches the GCS upload to use `cloud.google.com/go/storage` with native Workload Identity Federation — no external tooling required. Ensure your pipeline slug is registered in the [release-artifacts Terraform](https://github.com/elastic/infra/tree/master/terraform/providers/gcp/env/release-artifacts/elastic-release.tfvars) so the WIF IAM binding exists for your slug.
 
 The binary doing the actual work is [`elastic/dractl`](https://github.com/elastic/dractl) (private). This repo is the public Buildkite plugin shell.
 
@@ -23,7 +23,7 @@ steps:
       mkdir -p artifacts
       cp build/distributions/* artifacts/
     plugins:
-      - elastic/dra-prep#v0.1.1:
+      - elastic/dra-prep#v0.1.3:
           product_id: apm-server
           stack_version: 9.5.0-SNAPSHOT
           workflow: snapshot
