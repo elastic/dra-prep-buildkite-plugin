@@ -29,9 +29,8 @@ upload="${BUILDKITE_PLUGIN_DRA_PREP_UPLOAD:-true}"
   exit 1
 }
 
-# Some teams read stack_version from a version file that omits the -SNAPSHOT
-# suffix (e.g. "9.6.0" instead of "9.6.0-SNAPSHOT"). Normalize here so the
-# manifest find and dractl invocations both use the correct filename.
+# Normalize here so the manifest find and dractl invocations both use the correct filename.
+# (e.g. "9.6.0" instead of "9.6.0-SNAPSHOT")
 if [[ "${workflow}" == "snapshot" && "${stack_version}" != *-SNAPSHOT ]]; then
   stack_version="${stack_version}-SNAPSHOT"
 fi
