@@ -137,6 +137,15 @@ teardown() {
   grep -q "upload.*--pipeline-slug apm-server.*--build-number 42" "${DRACTL_ARGS_LOG}"
 }
 
+@test "appends -SNAPSHOT to bare stack_version for snapshot workflow" {
+  export BUILDKITE_PLUGIN_DRA_PREP_STACK_VERSION=9.5.0
+  mkdir -p ./artifacts
+  touch ./artifacts/apm-server-9.5.0-SNAPSHOT-amd64.deb
+  run bash "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -q "meta-data set DRA_VERSION_BUILD_ID 9.5.0-ab12cd34" "${AGENT_LOG}"
+}
+
 @test "passes --fail-on-diff to dractl when fail_on_diff is true" {
   export BUILDKITE_PLUGIN_DRA_PREP_FAIL_ON_DIFF=true
   mkdir -p ./artifacts
