@@ -146,6 +146,27 @@ teardown() {
   grep -q -- "--fail-on-diff" "${DRACTL_ARGS_LOG}"
 }
 
+@test "normalizes raw version to include -SNAPSHOT suffix for snapshot workflow" {
+  export BUILDKITE_PLUGIN_DRA_PREP_STACK_VERSION=9.5.0
+  export BUILDKITE_PLUGIN_DRA_PREP_WORKFLOW=snapshot
+  mkdir -p ./artifacts
+  touch ./artifacts/apm-server-9.5.0-SNAPSHOT-amd64.deb
+  run bash "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -q -- "--stack-version 9.5.0-SNAPSHOT" "${DRACTL_ARGS_LOG}"
+}
+
+@test "does not duplicate -SNAPSHOT suffix when already present" {
+  export BUILDKITE_PLUGIN_DRA_PREP_STACK_VERSION=9.5.0-SNAPSHOT
+  export BUILDKITE_PLUGIN_DRA_PREP_WORKFLOW=snapshot
+  mkdir -p ./artifacts
+  touch ./artifacts/apm-server-9.5.0-SNAPSHOT-amd64.deb
+  run bash "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -q -- "--stack-version 9.5.0-SNAPSHOT" "${DRACTL_ARGS_LOG}"
+  ! grep -q -- "--stack-version 9.5.0-SNAPSHOT-SNAPSHOT" "${DRACTL_ARGS_LOG}"
+}
+
 @test "skips upload when upload is false" {
   export BUILDKITE_PLUGIN_DRA_PREP_UPLOAD=false
   mkdir -p ./artifacts
