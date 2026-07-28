@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DRACTL_VERSION="v0.1.4"
+DRACTL_VERSION="v0.1.5"
 
 if [[ "${BUILDKITE_COMMAND_EXIT_STATUS:-0}" != "0" ]]; then
   echo "--- :skip: Producer step failed (exit ${BUILDKITE_COMMAND_EXIT_STATUS}), skipping DRA prep"
@@ -28,6 +28,13 @@ upload="${BUILDKITE_PLUGIN_DRA_PREP_UPLOAD:-true}"
   echo "ERROR: plugin config 'workflow' is required" >&2
   exit 1
 }
+
+# Normalize stack_version to include -SNAPSHOT suffix for snapshot builds.
+# Some teams pass the raw version (e.g. 9.6.0) without the suffix; dractl
+# writes the manifest as manifest-9.6.0-SNAPSHOT.json so we must match that.
+if [[ "${workflow}" == "snapshot" && "${stack_version}" != *-SNAPSHOT ]]; then
+  stack_version="${stack_version}-SNAPSHOT"
+fi
 
 if [[ -z "${VAULT_GITHUB_TOKEN:-}" ]]; then
   echo "ERROR: VAULT_GITHUB_TOKEN is not set." >&2

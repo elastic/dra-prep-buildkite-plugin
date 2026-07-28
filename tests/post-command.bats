@@ -31,7 +31,7 @@ setup() {
   esac
 
   # Build a real tarball from the fake dractl fixture (name matches goreleaser template)
-  local version="0.1.4"
+  local version="0.1.5"
   local archive="dractl_${version}_linux_${arch}.tar.gz"
   tar -czf "${STUB_DIR}/${archive}" \
     -C "${FIXTURES_DIR}" dractl
@@ -144,6 +144,27 @@ teardown() {
   run bash "${HOOK}"
   [ "$status" -eq 0 ]
   grep -q -- "--fail-on-diff" "${DRACTL_ARGS_LOG}"
+}
+
+@test "normalizes raw version to include -SNAPSHOT suffix for snapshot workflow" {
+  export BUILDKITE_PLUGIN_DRA_PREP_STACK_VERSION=9.5.0
+  export BUILDKITE_PLUGIN_DRA_PREP_WORKFLOW=snapshot
+  mkdir -p ./artifacts
+  touch ./artifacts/apm-server-9.5.0-SNAPSHOT-amd64.deb
+  run bash "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -q -- "--stack-version 9.5.0-SNAPSHOT" "${DRACTL_ARGS_LOG}"
+}
+
+@test "does not duplicate -SNAPSHOT suffix when already present" {
+  export BUILDKITE_PLUGIN_DRA_PREP_STACK_VERSION=9.5.0-SNAPSHOT
+  export BUILDKITE_PLUGIN_DRA_PREP_WORKFLOW=snapshot
+  mkdir -p ./artifacts
+  touch ./artifacts/apm-server-9.5.0-SNAPSHOT-amd64.deb
+  run bash "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -q -- "--stack-version 9.5.0-SNAPSHOT" "${DRACTL_ARGS_LOG}"
+  ! grep -q -- "--stack-version 9.5.0-SNAPSHOT-SNAPSHOT" "${DRACTL_ARGS_LOG}"
 }
 
 @test "skips upload when upload is false" {
