@@ -31,7 +31,7 @@ setup() {
   esac
 
   # Build a real tarball from the fake dractl fixture (name matches goreleaser template)
-  local version="0.1.5"
+  local version="0.1.6"
   local archive="dractl_${version}_linux_${arch}.tar.gz"
   tar -czf "${STUB_DIR}/${archive}" \
     -C "${FIXTURES_DIR}" dractl

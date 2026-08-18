@@ -23,7 +23,7 @@ steps:
       mkdir -p artifacts
       cp build/distributions/* artifacts/
     plugins:
-      - elastic/dra-prep#v0.1.5:
+      - elastic/dra-prep#v0.1.6:
           product_id: apm-server
           stack_version: 9.5.0-SNAPSHOT
           workflow: snapshot
