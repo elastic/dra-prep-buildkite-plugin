@@ -127,7 +127,7 @@ while :; do
   dep="${!dep_var:-}"
   [[ -n "${dep}" ]] || break
   dractl_args+=(--dependency "${dep}")
-  i=$(( i + 1 ))
+  i=$((i + 1))
 done
 if [[ "${fail_on_diff}" == "true" ]]; then
   dractl_args+=(--fail-on-diff)
