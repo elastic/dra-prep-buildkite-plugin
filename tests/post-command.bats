@@ -167,6 +167,17 @@ teardown() {
   ! grep -q -- "--stack-version 9.5.0-SNAPSHOT-SNAPSHOT" "${DRACTL_ARGS_LOG}"
 }
 
+@test "passes --dependency flags to dractl when dependencies are configured" {
+  export BUILDKITE_PLUGIN_DRA_PREP_DEPENDENCIES_0="beats:https://artifacts-snapshot.elastic.co/beats/latest/9.5.0-SNAPSHOT.json"
+  export BUILDKITE_PLUGIN_DRA_PREP_DEPENDENCIES_1="elasticsearch:https://artifacts-snapshot.elastic.co/elasticsearch/latest/9.5.0-SNAPSHOT.json"
+  mkdir -p ./artifacts
+  touch ./artifacts/apm-server-9.5.0-SNAPSHOT-amd64.deb
+  run bash "${HOOK}"
+  [ "$status" -eq 0 ]
+  grep -q -- "--dependency beats:https://artifacts-snapshot.elastic.co/beats/latest/9.5.0-SNAPSHOT.json" "${DRACTL_ARGS_LOG}"
+  grep -q -- "--dependency elasticsearch:https://artifacts-snapshot.elastic.co/elasticsearch/latest/9.5.0-SNAPSHOT.json" "${DRACTL_ARGS_LOG}"
+}
+
 @test "skips upload when upload is false" {
   export BUILDKITE_PLUGIN_DRA_PREP_UPLOAD=false
   mkdir -p ./artifacts

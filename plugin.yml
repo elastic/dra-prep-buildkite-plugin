@@ -16,6 +16,10 @@ configuration:
       type: boolean
     upload:
       type: boolean
+    dependencies:
+      type: array
+      items:
+        type: string
   required:
     - product_id
     - stack_version
