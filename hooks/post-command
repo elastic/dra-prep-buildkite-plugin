@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DRACTL_VERSION="v0.1.6"
+DRACTL_VERSION="v0.1.8"
 
 if [[ "${BUILDKITE_COMMAND_EXIT_STATUS:-0}" != "0" ]]; then
   echo "--- :skip: Producer step failed (exit ${BUILDKITE_COMMAND_EXIT_STATUS}), skipping DRA prep"
