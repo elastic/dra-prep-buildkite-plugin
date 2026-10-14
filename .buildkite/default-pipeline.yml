@@ -17,7 +17,7 @@ steps:
 
   - label: ":buildkite: Validate plugin"
     plugins:
-      - plugin-linter#v3.3.0:
+      - plugin-linter#v4.0.0:
           id: elastic/dra-prep
     agents:
       provider: "gcp"
