@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/buildkite-plugins/buildkite-plugin-linter/master/lib/plugin-yaml-schema.yml
 name: DRA Prep
-description: Generate DRA build id, manifest, and summary for the artifacts produced in this step, and upload them to the Buildkite store.
+description: Generate DRA build id, manifest, and summary for the artifacts produced in this step, and upload them to GCS.
 author: https://github.com/elastic
 requirements: []
 configuration:
