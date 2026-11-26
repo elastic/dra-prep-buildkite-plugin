@@ -26,7 +26,9 @@ steps:
   - label: ":smoke: Integration test"
     command: ".buildkite/scripts/integration-test.sh"
     plugins:
-      - elastic/dra-prep#$BUILDKITE_COMMIT:
+      # Pin an upstream commit so this integration test can also run when the
+      # checked-out commit belongs to an external fork and is absent upstream.
+      - elastic/dra-prep#3ce01b14cb9620b221203f2dc403ce6017aa9314:
           product_id: smoke-test
           stack_version: "9.5.0-SNAPSHOT"
           workflow: snapshot
